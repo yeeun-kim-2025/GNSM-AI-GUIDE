@@ -860,18 +860,18 @@ def run_chat_assistant(
             rich_notice_md = ""
             if has_rich_content:
                 rich_notice_md = (
-                    "\n\n> ℹ️ **안내드립니다!**  \n"
-                    "> 홈페이지 안내사항을 함께 확인해주세요!\n"
+                    "\n\n> ℹ️ **더욱 자세한 안내를 원하신다면?**  \n"
+                    "> 홈페이지를 함께 확인해주세요!\n"
                 )
 
-            # 4단계: '더 자세히 보기' 버튼
+            # 4단계: '홈페이지 확인하기' 버튼
             links_md = ""
             if link_items:
                 first_label, first_url = link_items[0]
                 links_md = f"""
 <a href="{first_url}" target="_blank" style="text-decoration:none;">
     <button style="padding:8px 16px; font-size:16px; border-radius:6px; border:1px solid #00519A; background-color:#00519A; color:white; cursor:pointer;">
-        🔎 더 자세히 보기
+        🔎 홈페이지 확인하기
     </button>
 </a>
 """
