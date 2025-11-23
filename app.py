@@ -5,50 +5,7 @@ import streamlit as st
 st.set_page_config(page_title="GNSM-AI Guide", page_icon="😊", layout="centered")
 
 # (2) 이후에 다른 모듈 import
-import os
 import utils  # utils.run_chat_assistant() 사용
-from manage_crawl import run_full_crawl           # 전체 사이트 크롤/색인
-from notice_indexer import run_full_notice_index, index_single_notice_url  # 공지 전용
-
-# ────────────────────────────────────────────────────────────────
-# 관리자 인증(일반 사용자에게는 색인 UI 숨김)
-admin_ok = False
-with st.sidebar:
-    code = st.text_input("관리코드", type="password", placeholder="관리자만 입력")
-    if code and code == st.secrets.get("ADMIN_CODE", ""):
-        admin_ok = True
-        st.caption("관리자 모드 ON")
-
-# ⚠ 자동 1회 색인은 UI를 오래 블록할 수 있어 기본 비활성화.
-#    꼭 필요하면 아래 조건을 켜세요(Secrets: ALLOW_AUTO_CRAWL="1")
-if admin_ok and (not os.path.exists("gnsm_site.db")) and (st.secrets.get("ALLOW_AUTO_CRAWL", "0") == "1"):
-    with st.spinner("초기 색인 중... (1회)"):
-        run_full_crawl()
-        st.success("초기 색인 완료")
-
-# ────────────────────────────────────────────────────────────────
-# 관리자 전용 도구(일반 사용자에겐 표시되지 않음)
-if admin_ok:
-    with st.expander("🔧 관리자 | 색인/크롤 도구"):
-        st.write("사이트 전체를 다시 훑어 최신 내용을 색인합니다. (시간 소요)")
-        if st.button("전체 사이트 재크롤링 실행"):
-            with st.spinner("크롤링/색인 중..."):
-                run_full_crawl()
-            st.success("완료!")
-
-        st.write("공지 전용 전체 색인(공지 경로만 빠르게 수집).")
-        if st.button("공지 전용 전체 재색인 실행"):
-            with st.spinner("공지 색인 중..."):
-                run_full_notice_index()
-            st.success("완료!")
-
-        one = st.text_input("단일 공지 URL 즉시 색인")
-        if st.button("이 URL만 즉시 색인"):
-            if one.strip():
-                ok = index_single_notice_url(one.strip())
-                st.success("색인 완료!" if ok else "허용되지 않는 URL 또는 실패")
-
-st.divider()
 
 # ────────────────────────────────────────────────────────────────
 # 닉네임 게이트 → 별명 입력 후 본 대화 UI 표시

@@ -14,13 +14,6 @@ from bs4 import BeautifulSoup
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-# indexer.search (사이트 전체 검색) optional
-try:
-    from indexer import search as index_search
-except Exception:  # pragma: no cover
-    index_search = None
-    logging.warning("indexer.search 를 가져오지 못했습니다. 검색 기능이 제한됩니다.")
-
 MUSEUM_BASE_URL = "https://www.sciencecenter.go.kr"
 
 
@@ -421,6 +414,7 @@ LIVE_PAGES = {
     "자원봉사": f"{MUSEUM_BASE_URL}/scipia/schedules/voluntary",
 }
 
+
 # ---------------------------------------
 # 5. 주제 트리 (대분류 -> 중/소분류)
 # ---------------------------------------
@@ -565,25 +559,23 @@ def _match_live_keys(question: str):
 
 
 # ---------------------------------------
-# 7. 사이트 전체 검색
+# 7. 사이트 전체 검색 (indexer 제거 버전: 현재는 사용 안 함)
 # ---------------------------------------
 def _search_site(query: str, limit: int = 5):
-    if index_search is None:
-        return []
-
-    try:
-        hits = index_search(query, limit=limit)
-        return hits or []
-    except Exception:
-        logging.error(f"[SEARCH] 검색 실패:\n{traceback.format_exc()}")
-        return []
+    """
+    예전에는 indexer 기반 전체 검색을 사용했지만,
+    현재 배포 버전에서는 indexer를 제거했으므로 빈 결과를 반환합니다.
+    (필요하면 나중에 다른 검색 방식으로 교체)
+    """
+    logging.info(f"[SEARCH] (indexer 제거) 검색 호출: {query} (limit={limit})")
+    return []
 
 
 # ---------------------------------------
 # 8. LLM 시스템 프롬프트 & 푸터
 # ---------------------------------------
 STRICT_SYSTEM_PROMPT = """
-당신은 국립과천과학관 전용 AI 가이트입니다.
+당신은 국립과천과학관 전용 AI 가이드입니다.
 
 [역할]
 - 사용자가 묻는 내용을, 아래 FACTS에 포함된 정보만 사용해서 이해하기 쉽게 설명합니다.
@@ -610,7 +602,12 @@ STRICT_SYSTEM_PROMPT = """
 
 
 def _append_info_footer(answer: str) -> str:
-    return answer 
+    """
+    이전 버전의 '안내드립니다!' 공통 문구는 제거.
+    지금은 아무 것도 추가하지 않고 그대로 반환.
+    """
+    return answer
+
 
 # ---------------------------------------
 # 9. LLM 초기화
@@ -703,7 +700,7 @@ def run_chat_assistant(
         # 👉 인사말은 messages에 넣지 않고, 화면에만 한 번 그린다.
         st.session_state.messages = []
 
-    # LLM 초기화 (이제 llm 항상 정의)
+    # LLM 초기화
     try:
         llm = _init_llm(model_name=model_name, temperature=temperature)
     except Exception as e:  # pragma: no cover
@@ -719,7 +716,6 @@ def run_chat_assistant(
     for msg in st.session_state.messages:
         role = "assistant" if isinstance(msg, AIMessage) else "user"
         with st.chat_message(role):
-            # 👉 assistant 메시지는 HTML 버튼이 있으니 unsafe_allow_html=True
             if role == "assistant":
                 st.markdown(msg.content, unsafe_allow_html=True)
             else:
@@ -772,7 +768,7 @@ def run_chat_assistant(
             )
         facts_sections.append(section)
 
-    # (2) 사이트 전체 검색
+    # (2) 사이트 전체 검색 (현재 indexer 제거로 인해 항상 빈 결과)
     hits = _search_site(user_msg, limit=3)
     for h in hits:
         url = h.get("url") or ""
@@ -865,7 +861,8 @@ def run_chat_assistant(
             if has_rich_content:
                 rich_notice_md = (
                     "\n\n> ℹ️ **더 자세한 안내가 필요하신가요?**  \n"
-                    "> 홈페이지 안내사항을 함께 확인해주세요!\n"
+                    "> 이 답변은 과학관 홈페이지 핵심 내용만 요약한 것입니다.  \n"
+                    "> **프로그램별 세부 일정, 표 형태의 안내, 이미지 등은 홈페이지 안내사항을 함께 확인해 주시면 더 정확하게 보실 수 있습니다.**\n"
                 )
 
             # 4단계: '더 자세히 보기' 버튼
